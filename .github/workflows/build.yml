@@ -30,6 +30,11 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
+      - name: Mengekstrak Berkas Proyek
+        run: |
+          set -euo pipefail
+          unzip zaynix-proyek.zip
+
       - name: Locate Xcode project
         id: locate
         env:
