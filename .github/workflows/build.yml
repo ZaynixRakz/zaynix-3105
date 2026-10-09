@@ -1,4 +1,4 @@
-name: Build Unsigned IPA Final
+name: Build Unsigned IPA Zaynix Sukses
 
 on:
   workflow_dispatch:
@@ -14,7 +14,7 @@ on:
         default: ZAYNIX
         type: string
       scheme:
-        description: Xcode scheme (Leave OGIOS if not renamed in Xcode)
+        description: Xcode scheme
         required: false
         default: OGIOS
         type: string
@@ -30,29 +30,13 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Radar Otomatis - Deteksi Ekstrak dan Bongkar Semua Jenis ZIP
+      - name: Ekstrak Proyek Zaynix
         run: |
           set -euo pipefail
-          # Mencari file zip apa pun yang diunggah ke repository (termasuk .zip.zip)
-          ZIP_FILE=$(find . -name '*.zip*' -o -name '*.ZIP*' -print -quit)
-          
+          ZIP_FILE=$(find . -name '*.zip*' -print -quit)
           if [ -n "$ZIP_FILE" ]; then
-            echo "Menemukan berkas zip: $ZIP_FILE"
-            mkdir -p temp_extract
-            unzip -o "$ZIP_FILE" -d temp_extract
-            
-            # Melacak letak file .xcodeproj di folder terdalam secara otomatis
-            XCODEPROJ_DIR=$(find temp_extract -name '*.xcodeproj' -type d -print -quit)
-            if [ -n "$XCODEPROJ_DIR" ]; then
-              PARENT_DIR=$(dirname "$XCODEPROJ_DIR")
-              echo "Memindahkan isi proyek dari $PARENT_DIR ke folder utama"
-              cp -R "$PARENT_DIR"/* .
-            else
-              echo "Peringatan: Berkas .xcodeproj tidak ditemukan di dalam ZIP."
-            fi
-            rm -rf temp_extract
-          else
-            echo "Tidak ada berkas ZIP eksternal, langsung memproses file lokal."
+            echo "Mengekstrak $ZIP_FILE..."
+            unzip -o "$ZIP_FILE"
           fi
 
       - name: Locate Xcode project
@@ -65,7 +49,12 @@ jobs:
           PROJECT=$(find "$ROOT" -name '*.xcodeproj' -type d -print -quit)
           WORKSPACE=$(find "$ROOT" -name '*.xcworkspace' -type d -not -path '*/Pods/*' -print -quit)
           if [ -z "$PROJECT" ] && [ -z "$WORKSPACE" ]; then
-            echo 'Eror: Berkas .xcodeproj tidak ditemukan di sistem utama.' >&2
+            echo "Mencari proyek di subfolder jika terbungkus..."
+            PROJECT=$(find . -name '*.xcodeproj' -type d -print -quit)
+            WORKSPACE=$(find . -name '*.xcworkspace' -type d -not -path '*/Pods/*' -print -quit)
+          fi
+          if [ -z "$PROJECT" ] && [ -z "$WORKSPACE" ]; then
+            echo 'No .xcodeproj or .xcworkspace found in the repository.' >&2
             exit 1
           fi
           if [ -n "$INPUT_SCHEME" ]; then
