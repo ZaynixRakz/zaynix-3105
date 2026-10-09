@@ -1,4 +1,4 @@
-name: Build Unsigned IPA (Zaynix Super Fix)
+name: Build Unsigned IPA Final Fix
 
 on:
   workflow_dispatch:
@@ -30,23 +30,23 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Otomatis Ekstrak dan Bongkar Folder Berlapis
+      - name: Deteksi Otomatis Ekstrak dan Bongkar File ZIP
         run: |
           set -euo pipefail
+          # Mencari file zip apa saja di repository
           ZIP_FILE=$(find . -name '*.zip' -o -name '*.ZIP' -print -quit)
           if [ -n "$ZIP_FILE" ]; then
             echo "Menemukan berkas zip: $ZIP_FILE"
             unzip -o "$ZIP_FILE" -d temp_extract
             
-            # Cari di mana letak file .xcodeproj sebenarnya
+            # Melacak letak file .xcodeproj di folder terdalam
             XCODEPROJ_DIR=$(find temp_extract -name '*.xcodeproj' -type d -print -quit)
             if [ -n "$XCODEPROJ_DIR" ]; then
-              # Ambil folder induk yang berisi proyek tersebut
               PARENT_DIR=$(dirname "$XCODEPROJ_DIR")
-              echo "Memindahkan isi proyek dari $PARENT_DIR ke folder utama GitHub"
+              echo "Memindahkan isi proyek dari $PARENT_DIR ke folder utama"
               cp -R "$PARENT_DIR"/* .
             else
-              echo "Eror: File .xcodeproj tidak ditemukan di dalam ZIP!" >&2
+              echo "Eror: Berkas .xcodeproj tidak ditemukan di dalam ZIP!" >&2
               exit 1
             fi
             rm -rf temp_extract
