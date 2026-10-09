@@ -30,7 +30,7 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Ekstrak Proyek Zaynix
+      - name: Ekstrak Proyek Bawaan
         run: |
           set -euo pipefail
           ZIP_FILE=$(find . -name '*.zip*' -print -quit)
@@ -38,28 +38,144 @@ jobs:
             echo "Mengekstrak $ZIP_FILE..."
             unzip -o "$ZIP_FILE"
           fi
-
-      - name: INTEGRASI SUNTIK OTOMATIS VERCEL PANEL & UNLOCK FF MAX
+                - name: BIKIN APLIKASI ZAYNIX DARI NOL (BAGIAN 1)
         run: |
           set -euo pipefail
           TARGET_FILE=$(find . -name 'ContentView.swift' -print -quit)
           if [ -f "$TARGET_FILE" ]; then
-            echo "Menyambungkan Aplikasi ke Web Admin Vercel: https://vercel.app"
-            
-            # 1. Mengubah nama interface dari OGIOS menjadi ZAYNIX
-            sed -i '' 's/OGIOS/ZAYNIX/g' "$TARGET_FILE"
-            
-            # 2. Unlock FF MAX agar bisa dimainkan langsung oleh user
-            sed -i '' 's/lockedLaunchButton(title: "FF MAX", subtitle: "Locked • Coming Soon", color: AppTheme.secondaryAccent)/launchButton(title: "FF MAX", subtitle: "Free Fire MAX", color: AppTheme.secondaryAccent, scheme: "freefiremax")/g' "$TARGET_FILE"
-            sed -i '' 's/\.accessibilityLabel("FF MAX locked, coming soon")//g' "$TARGET_FILE"
-            
-            # 3. Menambahkan tombol Mod Menu Zaynix tambahan setelah tombol Magic
-            sed -i '' 's/patchCard(name: "Magic", target: "FREE FIRE • NORMAL", package: "OGIOS File (14).3105", color: AppTheme.accent, state: $magicEnabled)/patchCard(name: "Magic", target: "FREE FIRE • NORMAL", package: "OGIOS File (14).3105", color: AppTheme.accent, state: $magicEnabled)\
-                    patchCard(name: "Mod Menu", target: "FREE FIRE • MAX\/TH", package: "OGIOS File (14).3105", color: AppTheme.accent, state: $magicEnabled)/g' "$TARGET_FILE"
+            echo "Menulis ulang ContentView.swift..."
+            cat << 'EOF' > "$TARGET_FILE"
+            import SwiftUI
+            import UIKit
+
+            struct ModItem: Identifiable {
+                let id = UUID()
+                let title: String
+                let subtitle: String
+                let patchFileName: String
+                var isEnabled: Bool = false
+            }
+
+            struct ContentView: View {
+                @State private var inputLicense = ""
+                @State private var isLoginSuccess = false
+                @State private var remainingDays = 0
+                @State private var errorMessage = ""
+                @State private var isLoading = false
+                @State private var selectedGame = "com.dts.freefireth"
+                
+                @State private var modFeatures: [ModItem] = [
+                    ModItem(title: "Aim Drag", subtitle: "FREE FIRE • INJECT", patchFileName: "OGIOS File (1)"),
+                    ModItem(title: "Aim Hook", subtitle: "FREE FIRE • INJECT", patchFileName: "OGIOS File (2)"),
+                    ModItem(title: "Antenna W10", subtitle: "FREE FIRE • INJECT", patchFileName: "OGIOS File (3)"),
+                    ModItem(title: "144 FPS Unlock", subtitle: "FREE FIRE • INJECT", patchFileName: "OGIOS File (4)"),
+                    ModItem(title: "Aim Body", subtitle: "FREE FIRE • INJECT", patchFileName: "OGIOS File (5)"),
+                    ModItem(title: "Aim Cheat", subtitle: "FREE FIRE • INJECT", patchFileName: "OGIOS File (6)"),
+                    ModItem(title: "Magic Bullet", subtitle: "FREE FIRE • INJECT", patchFileName: "OGIOS File (7)"),
+                    ModItem(title: "💎 MOD MENU ZAYNIX", subtitle: "SPECIAL EDITION", patchFileName: "OGIOS File (14)")
+                ]
+                                var body: some View {
+                    ZStack {
+                        Color(red: 0.05, green: 0.05, blue: 0.07).ignoresSafeArea()
+                        if !isLoginSuccess {
+                            VStack(spacing: 30) {
+                                VStack(spacing: 8) {
+                                    Text("ZAYNIX").font(.system(size: 48, weight: .black, design: .rounded)).foregroundColor(.white).tracking(4)
+                                    Text("VERCEL LICENSED CONTROL CENTER").font(.system(size: 10, weight: .bold)).foregroundColor(.red).tracking(2)
+                                }.padding(.top, 80)
+                                VStack(alignment: .leading, spacing: 15) {
+                                    Text("ENTER ACCESS KEY").font(.caption).bold().foregroundColor(.gray)
+                                    TextField("ZAYNIX-XXXXXXXXXX", text: $inputLicense).padding().background(Color.white.opacity(0.04)).cornerRadius(14).foregroundColor(.white).overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.red.opacity(0.3), lineWidth: 1))
+                                    if !errorMessage.isEmpty { Text(errorMessage).font(.caption).foregroundColor(.red).bold() }
+                                }.padding(.horizontal, 32)
+                                Button(action: { checkLicenseFromVercel() }) {
+                                    HStack {
+                                        if isLoading { ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .white)) }
+                                        else { Text("VERIFY VIA VERCEL").font(.headline).bold().foregroundColor(.white) }
+                                    }.frame(maxWidth: .infinity).frame(height: 56).background(Color.red).cornerRadius(14)
+                                }.padding(.horizontal, 32).disabled(isLoading)
+                                Spacer()
+                            }
+                        } else {
+                            ScrollView {
+                                VStack(spacing: 22) {
+                                    HStack {
+                                        VStack(alignment: .leading, spacing: 4) {
+                                            Text("ZAYNIX").font(.system(size: 28, weight: .black)).foregroundColor(.white)
+                                            Text("MULTIPACK CONTROL CENTER").font(.caption).foregroundColor(.red).bold()
+                                        }
+                                        Spacer()
+                                        Text("\(remainingDays) HARI AKTIF").font(.system(size: 11, weight: .bold)).padding(.horizontal, 12).padding(.vertical, 8).background(Color.green.opacity(0.15)).foregroundColor(.green).cornerRadius(20)
+                                    }.padding(.horizontal).padding(.top, 15)
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        Text("SELECT GAME VERSION").font(.system(size: 10, weight: .bold)).foregroundColor(.gray)
+                                        Picker("Game Version", selection: $selectedGame) {
+                                            Text("Free Fire Normal (TH)").tag("com.dts.freefireth")
+                                            Text("Free Fire MAX").tag("com.dts.freefiremax")
+                                        }.pickerStyle(.segmented)
+                                    }.padding().background(Color.white.opacity(0.03)).cornerRadius(14).padding(.horizontal)
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        Text("PATCH OPTIONS").font(.system(size: 10, weight: .bold)).foregroundColor(.gray).padding(.horizontal)
+                                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 15) {
+                                            ForEach(0..<modFeatures.count, id: \.self) { index in
+                                                VStack(alignment: .leading, spacing: 10) {
+                                                    HStack {
+                                                        Image(systemName: "bolt.shield.fill").foregroundColor(modFeatures[index].isEnabled ? .green : .red)
+                                                        Spacer()
+                                                        Text(modFeatures[index].isEnabled ? "ON" : "OFF").font(.system(size: 10, weight: .bold)).foregroundColor(modFeatures[index].isEnabled ? .green : .red)
+                                                    }
+                                                    Text(modFeatures[index].title).font(.system(size: 14, weight: .bold)).foregroundColor(.white)
+                                                    Button(action: { modFeatures[index].isEnabled.toggle() }) {
+                                                        Text(modFeatures[index].isEnabled ? "ACTIVE" : "INJECT NOW").font(.system(size: 10, weight: .bold)).foregroundColor(.white).frame(maxWidth: .infinity).frame(height: 32).background(modFeatures[index].isEnabled ? Color.green : Color.white.opacity(0.06)).cornerRadius(8)
+                                                    }
+                                                }.padding().background(Color.white.opacity(0.03)).cornerRadius(16)
+                                            }
+                                        }.padding(.horizontal)
+                                    }
+                                    VStack(spacing: 6) {
+                                        Text("Developed by ZAYNIX").font(.system(size: 11)).foregroundColor(.gray)
+                                        Link("ZAYNIX TELEGRAM", destination: URL(string: "https://t.me")!).font(.system(size: 11, weight: .bold)).foregroundColor(.blue)
+                                    }.padding(.vertical)
+                                }
+                            }
+                        }
+                    }
+                }
+                func checkLicenseFromVercel() {
+                    guard !inputLicense.isEmpty else { errorMessage = "⚠️ KEY TIDAK BOLEH KOSONG!"; return }
+                    isLoading = true; errorMessage = ""
+                    let urlString = "https://vercel.app\(inputLicense)"
+                    guard let url = URL(string: urlString) else { isLoading = false; return }
+                    URLSession.shared.dataTask(with: url) { data, response, error in
+                        DispatchQueue.main.async {
+                            self.isLoading = false
+                            if let data = data, let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                                if let valid = json["valid"] as? Bool, valid == true, let days = json["days"] as? Int {
+                                    self.remainingDays = days; self.isLoginSuccess = true
+                                } else { self.errorMessage = "❌ KEY INVALID ATAU KADALUARSA!" }
+                            } else { self.errorMessage = "🌐 EROR JARINGAN VERCEL DOWN!" }
+                        }
+                    }.resume()
+                }
+            }
+            EOF
           else
-            echo "File ContentView.swift tidak ditemukan!"
             exit 1
           fi
+                - name: GANTI NAMA UTAMA IKON APLIKASI DI INFO.PLIST
+        run: |
+          set -euo pipefail
+          PLIST_FILE=$(find . -name 'Info.plist' -print -quit)
+          if [ -f "$PLIST_FILE" ]; then
+            echo "Mengubah nama tampilan aplikasi di $PLIST_FILE"
+            sed -i '' 's/OGIOS/ZAYNIX/g' "$PLIST_FILE"
+          fi
+
+      - name: HAPUS FILE SAMPAH PROYEK LAMA
+        run: |
+          set -euo pipefail
+          find . -name 'CleanerView.swift' -delete || true
+          find . -name 'SettingsView.swift' -delete || true
 
       - name: Locate Xcode project
         id: locate
@@ -72,7 +188,6 @@ jobs:
             PROJECT=$(find . -name '*.xcodeproj' -type d -print -quit)
             WORKSPACE=$(find . -name '*.xcworkspace' -type d -not -path '*/Pods/*' -print -quit)
           fi
-          if [ -z "$PROJECT" ] && [ -z "$WORKSPACE" ]; then exit 1; fi
           echo "project=$PROJECT" >> "$GITHUB_OUTPUT"
           echo "workspace=$WORKSPACE" >> "$GITHUB_OUTPUT"
           echo "scheme=OGIOS" >> "$GITHUB_OUTPUT"
@@ -103,4 +218,5 @@ jobs:
         with:
           name: ${{ inputs.project_name }}-unsigned-ipa
           path: ${{ runner.temp }}/${{ inputs.project_name }}.ipa
+          
           
