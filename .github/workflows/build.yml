@@ -1,4 +1,4 @@
-name: Build Unsigned IPA (Zaynix Auto Fix)
+name: Build Unsigned IPA (Zaynix Super Fix)
 
 on:
   workflow_dispatch:
@@ -30,15 +30,28 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Otomatis Deteksi dan Ekstrak ZIP
+      - name: Otomatis Ekstrak dan Bongkar Folder Berlapis
         run: |
           set -euo pipefail
           ZIP_FILE=$(find . -name '*.zip' -o -name '*.ZIP' -print -quit)
           if [ -n "$ZIP_FILE" ]; then
             echo "Menemukan berkas zip: $ZIP_FILE"
-            unzip -o "$ZIP_FILE"
+            unzip -o "$ZIP_FILE" -d temp_extract
+            
+            # Cari di mana letak file .xcodeproj sebenarnya
+            XCODEPROJ_DIR=$(find temp_extract -name '*.xcodeproj' -type d -print -quit)
+            if [ -n "$XCODEPROJ_DIR" ]; then
+              # Ambil folder induk yang berisi proyek tersebut
+              PARENT_DIR=$(dirname "$XCODEPROJ_DIR")
+              echo "Memindahkan isi proyek dari $PARENT_DIR ke folder utama GitHub"
+              cp -R "$PARENT_DIR"/* .
+            else
+              echo "Eror: File .xcodeproj tidak ditemukan di dalam ZIP!" >&2
+              exit 1
+            fi
+            rm -rf temp_extract
           else
-            echo "Tidak ada berkas ZIP, menggunakan file lokal."
+            echo "Tidak ada berkas ZIP, mendeteksi file lokal."
           fi
 
       - name: Locate Xcode project
@@ -57,9 +70,9 @@ jobs:
           if [ -n "$INPUT_SCHEME" ]; then
             SCHEME="$INPUT_SCHEME"
           elif [ -n "$WORKSPACE" ]; then
-            SCHEME=$(xcodebuild -list -json -workspace "$WORKSPACE" | /usr/bin/python3 -c 'import json,sys; d=json.load(sys.stdin); print((d.get("workspace",{}).get("schemes") or [""])[0])')
+            SCHEME=$(xcodebuild -list -json -workspace "$WORKSPACE" | /usr/bin/python3 -c 'import json,sys; d=json.load(sys.stdin); print((d.get("workspace",{}).get("schemes") or [""]))')
           else
-            SCHEME=$(xcodebuild -list -json -project "$PROJECT" | /usr/bin/python3 -c 'import json,sys; d=json.load(sys.stdin); print((d.get("project",{}).get("schemes") or [""])[0])')
+            SCHEME=$(xcodebuild -list -json -project "$PROJECT" | /usr/bin/python3 -c 'import json,sys; d=json.load(sys.stdin); print((d.get("project",{}).get("schemes") or [""]))')
           fi
           [ -n "$SCHEME" ] || { echo 'No Xcode scheme found.' >&2; exit 1; }
           echo "project=$PROJECT" >> "$GITHUB_OUTPUT"
