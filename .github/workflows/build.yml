@@ -4,18 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       bundle_id:
-        description: Target bundle identifier
-        required: false
         default: com.apple.mobile.MobileHouseArrest
         type: string
       project_name:
-        description: Output IPA name
-        required: false
         default: ZAYNIX
         type: string
       scheme:
-        description: Xcode scheme
-        required: false
         default: OGIOS
         type: string
 
@@ -27,61 +21,42 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 30
     steps:
-      - name: Checkout source
+      - name: Ambil Source Code dari Repositori
         uses: actions/checkout@v4
 
-      - name: Ekstrak Proyek Bawaan
+      - name: Ekstrak File ZIP Proyek dan Tata Ulang Struktur
         run: |
-          set -euo pipefail
           ZIP_FILE=$(find . -name '*.zip*' -print -quit)
-          if [ -n "$ZIP_FILE" ]; then
-            echo "Mengekstrak $ZIP_FILE..."
-            unzip -o "$ZIP_FILE"
-          fi
-                - name: BIKIN APLIKASI ZAYNIX DARI NOL (BAGIAN 1)
+          if [ -n "$ZIP_FILE" ]; then unzip -o "$ZIP_FILE"; fi
+
+      - name: Bangun Ulang Tampilan Aplikasi Zaynix Dari Nol via Xcode Engine
         run: |
-          set -euo pipefail
           TARGET_FILE=$(find . -name 'ContentView.swift' -print -quit)
           if [ -f "$TARGET_FILE" ]; then
-            echo "Menulis ulang ContentView.swift..."
             cat << 'EOF' > "$TARGET_FILE"
             import SwiftUI
-            import UIKit
-
             struct ModItem: Identifiable {
-                let id = UUID()
-                let title: String
-                let subtitle: String
-                let patchFileName: String
-                var isEnabled: Bool = false
+                let id = UUID(); let title: String; let subtitle: String; let patchFileName: String; var isEnabled = false
             }
-
             struct ContentView: View {
-                @State private var inputLicense = ""
-                @State private var isLoginSuccess = false
-                @State private var remainingDays = 0
-                @State private var errorMessage = ""
-                @State private var isLoading = false
-                @State private var selectedGame = "com.dts.freefireth"
-                
+                @State private var inputLicense = ""; @State private var isLoginSuccess = false
+                @State private var remainingDays = 0; @State private var errorMessage = ""
+                @State private var isLoading = false; @State private var selectedGame = "com.dts.freefireth"
                 @State private var modFeatures: [ModItem] = [
                     ModItem(title: "Aim Drag", subtitle: "FREE FIRE • INJECT", patchFileName: "OGIOS File (1)"),
                     ModItem(title: "Aim Hook", subtitle: "FREE FIRE • INJECT", patchFileName: "OGIOS File (2)"),
                     ModItem(title: "Antenna W10", subtitle: "FREE FIRE • INJECT", patchFileName: "OGIOS File (3)"),
                     ModItem(title: "144 FPS Unlock", subtitle: "FREE FIRE • INJECT", patchFileName: "OGIOS File (4)"),
-                    ModItem(title: "Aim Body", subtitle: "FREE FIRE • INJECT", patchFileName: "OGIOS File (5)"),
-                    ModItem(title: "Aim Cheat", subtitle: "FREE FIRE • INJECT", patchFileName: "OGIOS File (6)"),
-                    ModItem(title: "Magic Bullet", subtitle: "FREE FIRE • INJECT", patchFileName: "OGIOS File (7)"),
                     ModItem(title: "💎 MOD MENU ZAYNIX", subtitle: "SPECIAL EDITION", patchFileName: "OGIOS File (14)")
                 ]
-                                var body: some View {
+                var body: some View {
                     ZStack {
                         Color(red: 0.05, green: 0.05, blue: 0.07).ignoresSafeArea()
                         if !isLoginSuccess {
                             VStack(spacing: 30) {
                                 VStack(spacing: 8) {
-                                    Text("ZAYNIX").font(.system(size: 48, weight: .black, design: .rounded)).foregroundColor(.white).tracking(4)
-                                    Text("VERCEL LICENSED CONTROL CENTER").font(.system(size: 10, weight: .bold)).foregroundColor(.red).tracking(2)
+                                    Text("ZAYNIX").font(.system(size: 48, weight: .black, design: .rounded)).foregroundColor(.white)
+                                    Text("VERCEL LICENSED CONTROL CENTER").font(.system(size: 10, weight: .bold)).foregroundColor(.red)
                                 }.padding(.top, 80)
                                 VStack(alignment: .leading, spacing: 15) {
                                     Text("ENTER ACCESS KEY").font(.caption).bold().foregroundColor(.gray)
@@ -90,7 +65,7 @@ jobs:
                                 }.padding(.horizontal, 32)
                                 Button(action: { checkLicenseFromVercel() }) {
                                     HStack {
-                                        if isLoading { ProgressView().progressViewStyle(CircularProgressViewStyle(tint: .white)) }
+                                        if isLoading { ProgressView() }
                                         else { Text("VERIFY VIA VERCEL").font(.headline).bold().foregroundColor(.white) }
                                     }.frame(maxWidth: .infinity).frame(height: 56).background(Color.red).cornerRadius(14)
                                 }.padding(.horizontal, 32).disabled(isLoading)
@@ -109,114 +84,71 @@ jobs:
                                     }.padding(.horizontal).padding(.top, 15)
                                     VStack(alignment: .leading, spacing: 12) {
                                         Text("SELECT GAME VERSION").font(.system(size: 10, weight: .bold)).foregroundColor(.gray)
-                                        Picker("Game Version", selection: $selectedGame) {
-                                            Text("Free Fire Normal (TH)").tag("com.dts.freefireth")
+                                        Picker("Game", selection: $selectedGame) {
+                                            Text("Free Fire Normal").tag("com.dts.freefireth")
                                             Text("Free Fire MAX").tag("com.dts.freefiremax")
                                         }.pickerStyle(.segmented)
                                     }.padding().background(Color.white.opacity(0.03)).cornerRadius(14).padding(.horizontal)
                                     VStack(alignment: .leading, spacing: 12) {
-                                        Text("PATCH OPTIONS").font(.system(size: 10, weight: .bold)).foregroundColor(.gray).padding(.horizontal)
                                         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 15) {
-                                            ForEach(0..<modFeatures.count, id: \.self) { index in
+                                            ForEach(0..<modFeatures.count, id: \.self) { idx in
                                                 VStack(alignment: .leading, spacing: 10) {
-                                                    HStack {
-                                                        Image(systemName: "bolt.shield.fill").foregroundColor(modFeatures[index].isEnabled ? .green : .red)
-                                                        Spacer()
-                                                        Text(modFeatures[index].isEnabled ? "ON" : "OFF").font(.system(size: 10, weight: .bold)).foregroundColor(modFeatures[index].isEnabled ? .green : .red)
-                                                    }
-                                                    Text(modFeatures[index].title).font(.system(size: 14, weight: .bold)).foregroundColor(.white)
-                                                    Button(action: { modFeatures[index].isEnabled.toggle() }) {
-                                                        Text(modFeatures[index].isEnabled ? "ACTIVE" : "INJECT NOW").font(.system(size: 10, weight: .bold)).foregroundColor(.white).frame(maxWidth: .infinity).frame(height: 32).background(modFeatures[index].isEnabled ? Color.green : Color.white.opacity(0.06)).cornerRadius(8)
-                                                    }
+                                                    Toggle(modFeatures[idx].title, isOn: $modFeatures[idx].isEnabled).foregroundColor(.white).font(.system(size: 14, weight: .bold))
                                                 }.padding().background(Color.white.opacity(0.03)).cornerRadius(16)
                                             }
                                         }.padding(.horizontal)
                                     }
-                                    VStack(spacing: 6) {
-                                        Text("Developed by ZAYNIX").font(.system(size: 11)).foregroundColor(.gray)
-                                        Link("ZAYNIX TELEGRAM", destination: URL(string: "https://t.me")!).font(.system(size: 11, weight: .bold)).foregroundColor(.blue)
-                                    }.padding(.vertical)
+                                    Link("ZAYNIX TELEGRAM", destination: URL(string: "https://t.me")!).font(.system(size: 11, weight: .bold)).foregroundColor(.blue).padding()
                                 }
                             }
                         }
                     }
                 }
                 func checkLicenseFromVercel() {
-                    guard !inputLicense.isEmpty else { errorMessage = "⚠️ KEY TIDAK BOLEH KOSONG!"; return }
+                    guard !inputLicense.isEmpty else { errorMessage = "⚠️ KEY KOSONG!"; return }
                     isLoading = true; errorMessage = ""
-                    let urlString = "https://vercel.app\(inputLicense)"
-                    guard let url = URL(string: urlString) else { isLoading = false; return }
-                    URLSession.shared.dataTask(with: url) { data, response, error in
+                    let urlStr = "https://vercel.app\(inputLicense)"
+                    guard let url = URL(string: urlStr) else { isLoading = false; return }
+                    URLSession.shared.dataTask(with: url) { d, _, _ in
                         DispatchQueue.main.async {
                             self.isLoading = false
-                            if let data = data, let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                                if let valid = json["valid"] as? Bool, valid == true, let days = json["days"] as? Int {
-                                    self.remainingDays = days; self.isLoginSuccess = true
-                                } else { self.errorMessage = "❌ KEY INVALID ATAU KADALUARSA!" }
-                            } else { self.errorMessage = "🌐 EROR JARINGAN VERCEL DOWN!" }
+                            if let d = d, let json = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
+                               let valid = json["valid"] as? Bool, valid == true, let days = json["days"] as? Int {
+                                self.remainingDays = days; self.isLoginSuccess = true
+                            } else { self.errorMessage = "❌ KEY INVALID/EXPIRED!" }
                         }
                     }.resume()
                 }
             }
             EOF
-          else
-            exit 1
-          fi
-                - name: GANTI NAMA UTAMA IKON APLIKASI DI INFO.PLIST
-        run: |
-          set -euo pipefail
-          PLIST_FILE=$(find . -name 'Info.plist' -print -quit)
-          if [ -f "$PLIST_FILE" ]; then
-            echo "Mengubah nama tampilan aplikasi di $PLIST_FILE"
-            sed -i '' 's/OGIOS/ZAYNIX/g' "$PLIST_FILE"
           fi
 
-      - name: HAPUS FILE SAMPAH PROYEK LAMA
+      - name: Konfigurasi Identitas Utama dan Bersihkan Cache Sampah Proyek
         run: |
-          set -euo pipefail
+          PLIST_FILE=$(find . -name 'Info.plist' -print -quit)
+          if [ -f "$PLIST_FILE" ]; then sed -i '' 's/OGIOS/ZAYNIX/g' "$PLIST_FILE"; fi
           find . -name 'CleanerView.swift' -delete || true
           find . -name 'SettingsView.swift' -delete || true
 
-      - name: Locate Xcode project
+      - name: Proses Pencarian Lokasi Berkas Cetak BluePrint Xcode Proyek
         id: locate
         run: |
-          set -euo pipefail
-          ROOT="$GITHUB_WORKSPACE"
-          PROJECT=$(find "$ROOT" -name '*.xcodeproj' -type d -print -quit)
-          WORKSPACE=$(find "$ROOT" -name '*.xcworkspace' -type d -not -path '*/Pods/*' -print -quit)
-          if [ -z "$PROJECT" ] && [ -z "$WORKSPACE" ]; then
-            PROJECT=$(find . -name '*.xcodeproj' -type d -print -quit)
-            WORKSPACE=$(find . -name '*.xcworkspace' -type d -not -path '*/Pods/*' -print -quit)
-          fi
+          PROJECT=$(find . -name '*.xcodeproj' -type d -print -quit)
           echo "project=$PROJECT" >> "$GITHUB_OUTPUT"
-          echo "workspace=$WORKSPACE" >> "$GITHUB_OUTPUT"
-          echo "scheme=OGIOS" >> "$GITHUB_OUTPUT"
 
-      - name: Build unsigned archive
-        env:
-          PROJECT: ${{ steps.locate.outputs.project }}
-          WORKSPACE: ${{ steps.locate.outputs.workspace }}
-          SCHEME: ${{ steps.locate.outputs.scheme }}
-          BUNDLE_ID: ${{ inputs.bundle_id }}
+      - name: Eksekusi Kompilasi Awan Tanpa Lisensi Xcodebuild Archive
         run: |
-          set -euo pipefail
-          ARCHIVE="$RUNNER_TEMP/App.xcarchive"
-          xcodebuild archive -project "$PROJECT" -scheme "$SCHEME" -sdk iphoneos -configuration Release -archivePath "$ARCHIVE" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID"
+          xcodebuild archive -project "${{ steps.locate.outputs.project }}" -scheme OGIOS -sdk iphoneos -configuration Release -archivePath "$RUNNER_TEMP/App.xcarchive" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' PRODUCT_BUNDLE_IDENTIFIER="${{ inputs.bundle_id }}"
 
-      - name: Package IPA
-        env:
-          IPA_NAME: ${{ inputs.project_name }}
+      - name: Bungkus Seluruh Hasil Produk Menjadi Berkas Mentah Format IPA
         run: |
-          set -euo pipefail
           APP_PATH=$(find "$RUNNER_TEMP/App.xcarchive/Products/Applications" -maxdepth 1 -name '*.app' -type d -print -quit)
           mkdir -p "$RUNNER_TEMP/Payload"
           cp -R "$APP_PATH" "$RUNNER_TEMP/Payload/"
-          ditto -c -k --sequesterRsrc --keepParent "$RUNNER_TEMP/Payload" "$RUNNER_TEMP/${IPA_NAME}.ipa"
+          ditto -c -k --sequesterRsrc --keepParent "$RUNNER_TEMP/Payload" "$RUNNER_TEMP/${{ inputs.project_name }}.ipa"
 
-      - name: Upload unsigned IPA artifact
+      - name: Unggah Hasil Kemasan Kompilasi Matang ke Server Unduhan Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ inputs.project_name }}-unsigned-ipa
           path: ${{ runner.temp }}/${{ inputs.project_name }}.ipa
-          
-          
