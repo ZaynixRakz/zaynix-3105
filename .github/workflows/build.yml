@@ -1,4 +1,4 @@
-name: Build Unsigned IPA Final Fix
+name: Build Unsigned IPA (Zaynix Total Fix)
 
 on:
   workflow_dispatch:
@@ -30,28 +30,28 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Deteksi Otomatis Ekstrak dan Bongkar File ZIP
+      - name: Radar Otomatis - Deteksi dan Ekstrak ZIP di Mana Saja
         run: |
           set -euo pipefail
-          # Mencari file zip apa saja di repository
+          # Mencari file zip apa pun yang diunggah ke repository
           ZIP_FILE=$(find . -name '*.zip' -o -name '*.ZIP' -print -quit)
+          
           if [ -n "$ZIP_FILE" ]; then
             echo "Menemukan berkas zip: $ZIP_FILE"
             unzip -o "$ZIP_FILE" -d temp_extract
             
-            # Melacak letak file .xcodeproj di folder terdalam
+            # Melacak letak file .xcodeproj di folder terdalam secara otomatis
             XCODEPROJ_DIR=$(find temp_extract -name '*.xcodeproj' -type d -print -quit)
             if [ -n "$XCODEPROJ_DIR" ]; then
               PARENT_DIR=$(dirname "$XCODEPROJ_DIR")
               echo "Memindahkan isi proyek dari $PARENT_DIR ke folder utama"
               cp -R "$PARENT_DIR"/* .
             else
-              echo "Eror: Berkas .xcodeproj tidak ditemukan di dalam ZIP!" >&2
-              exit 1
+              echo "Peringatan: Berkas .xcodeproj tidak ditemukan di dalam ZIP."
             fi
             rm -rf temp_extract
           else
-            echo "Tidak ada berkas ZIP, mendeteksi file lokal."
+            echo "Tidak ada berkas ZIP eksternal, langsung memproses file lokal."
           fi
 
       - name: Locate Xcode project
@@ -64,7 +64,7 @@ jobs:
           PROJECT=$(find "$ROOT" -name '*.xcodeproj' -type d -print -quit)
           WORKSPACE=$(find "$ROOT" -name '*.xcworkspace' -type d -not -path '*/Pods/*' -print -quit)
           if [ -z "$PROJECT" ] && [ -z "$WORKSPACE" ]; then
-            echo 'No .xcodeproj or .xcworkspace found in the repository.' >&2
+            echo 'Eror: Berkas .xcodeproj tidak ditemukan di sistem utama.' >&2
             exit 1
           fi
           if [ -n "$INPUT_SCHEME" ]; then
