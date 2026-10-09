@@ -1,4 +1,4 @@
-name: Build unsigned IPA
+name: Build Unsigned IPA (Zaynix Auto Fix)
 
 on:
   workflow_dispatch:
@@ -14,7 +14,7 @@ on:
         default: ZAYNIX
         type: string
       scheme:
-        description: Xcode scheme
+        description: Xcode scheme (Leave OGIOS if not renamed in Xcode)
         required: false
         default: OGIOS
         type: string
@@ -30,10 +30,16 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Mengekstrak Berkas Proyek
+      - name: Otomatis Deteksi dan Ekstrak ZIP
         run: |
           set -euo pipefail
-          unzip zaynix-proyek.zip
+          ZIP_FILE=$(find . -name '*.zip' -o -name '*.ZIP' -print -quit)
+          if [ -n "$ZIP_FILE" ]; then
+            echo "Menemukan berkas zip: $ZIP_FILE"
+            unzip -o "$ZIP_FILE"
+          else
+            echo "Tidak ada berkas ZIP, menggunakan file lokal."
+          fi
 
       - name: Locate Xcode project
         id: locate
