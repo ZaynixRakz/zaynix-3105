@@ -27,13 +27,17 @@ jobs:
       - name: Ekstrak File ZIP Proyek dan Tata Ulang Struktur
         run: |
           ZIP_FILE=$(find . -name '*.zip*' -print -quit)
-          if [ -n "$ZIP_FILE" ]; then unzip -o "$ZIP_FILE"; fi
+          if [ -n "$ZIP_FILE" ]; then 
+            unzip -o "$ZIP_FILE"
+            # Menghapus file ZIP asli setelah diekstrak agar tidak mengganggu proses pencarian proyek oleh mesin build
+            rm "$ZIP_FILE"
+          fi
 
       - name: Bangun Ulang Tampilan Aplikasi Zaynix Otomatis (Anti-Error)
         run: |
           TARGET_FILE=$(find . -name 'ContentView.swift' -print -quit)
           if [ -f "$TARGET_FILE" ]; then
-            # Mengubah teks OGIOS ke ZAYNIX di tampilan menu visual
+            # Mengubah teks OGIOS ke ZAYNIX di tampilan menu visual tanpa menyentuh nama file biner internal
             sed -i '' 's/"OGIOS"/"ZAYNIX"/g' "$TARGET_FILE"
             sed -i '' 's/"PATCH CONTROL CENTER"/"ZAYNIX CONTROL CENTER"/g' "$TARGET_FILE"
             sed -i '' 's/"Developed by OGIOS"/"Developed by ZAYNIX"/g' "$TARGET_FILE"
@@ -49,15 +53,18 @@ jobs:
             fi
           fi
 
-      - name: Eksekusi Xcode Build Engine
+      - name: Eksekusi Xcode Build Engine Dinamis
         run: |
           XCODE_PROJ=$(find . -name '*.xcodeproj' -print -quit)
+          XCODE_PROJECT_DIR=$(dirname "$XCODE_PROJ")
           
-          # Melakukan kompilasi murni menggunakan skrip bawaan asli project tanpa memaksa memodifikasi nama biner internal agar tidak error 65
-          xcodebuild -project "$XCODE_PROJ" \
+          # Berpindah secara dinamis ke folder tempat file .xcodeproj berada agar jalur file patch terbaca dengan benar
+          cd "$XCODE_PROJECT_DIR"
+          
+          xcodebuild -project "$(basename "$XCODE_PROJ")" \
                      -scheme "${{ github.event.inputs.scheme }}" \
                      -configuration Release \
-                     -archivePath build/ZAYNIX.xcarchive \
+                     -archivePath "${{ github.workspace }}/build/ZAYNIX.xcarchive" \
                      clean archive \
                      CODE_SIGNING_ALLOWED=NO \
                      CODE_SIGNING_REQUIRED=NO
