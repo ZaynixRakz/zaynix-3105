@@ -133,7 +133,7 @@ jobs:
                     }.resume()
                 }
             }
-          EOF
+            EOF
           fi
 
       - name: Konfigurasi Bundle ID Baru Aplikasi
@@ -149,18 +149,30 @@ jobs:
       - name: Eksekusi Xcode Build Engine
         run: |
           XCODE_PROJ=$(find . -name '*.xcodeproj' -print -quit)
+          XCODE_PROJECT_DIR=$(dirname "$XCODE_PROJ")
+          
+          # Memperbaiki folder output tujuan agar Xcode mengenali struktur internal skrip dengan sinkron
           xcodebuild -project "$XCODE_PROJ" \
                      -scheme "${{ github.event.inputs.scheme }}" \
                      -configuration Release \
                      -archivePath build/ZAYNIX.xcarchive \
                      clean archive \
                      CODE_SIGNING_ALLOWED=NO \
-                     CODE_SIGNING_REQUIRED=NO
+                     CODE_SIGNING_REQUIRED=NO \
+                     PRODUCT_NAME="OGIOS" \
+                     WRAPPER_NAME="OGIOS.app"
 
       - name: Persiapan Ekspor File Aplikasi
         run: |
           mkdir -p Payload
-          mv build/ZAYNIX.xcarchive/Products/Applications/*.app Payload/
+          # Cari letak file .app secara dinamis di dalam folder build kompilasi
+          APP_PATH=$(find build/ZAYNIX.xcarchive/Products/Applications -name '*.app' -print -quit)
+          if [ -d "$APP_PATH" ]; then
+            cp -R "$APP_PATH" Payload/
+          else
+            echo "Error: File aplikasi .app tidak ditemukan!"
+            exit 1
+          fi
 
       - name: Konversi Menjadi File Mentahan .IPA
         run: |
@@ -171,3 +183,4 @@ jobs:
         with:
           name: ZAYNIX-Menu-Applications
           path: ZAYNIX_Unsigned.ipa
+          
