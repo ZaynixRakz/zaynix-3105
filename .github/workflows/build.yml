@@ -35,14 +35,22 @@ jobs:
           if [ -f "$TARGET_FILE" ]; then
             cat << 'EOF' > "$TARGET_FILE"
             import SwiftUI
+
             struct ModItem: Identifiable {
-                let id = UUID(); let title: String; let subtitle: String; let patchFileName: String; var isEnabled = false
+                let id = UUID()
+                let title: String
+                let subtitle: String
+                let patchFileName: String
+                var isEnabled = false
             }
+
             struct ContentView: View {
-                @State private var inputLicense = ""; @State private var isLoginSuccess = false
+                @State private var inputLicense = ""
+                @State private var isLoginSuccess = false
                 @State private var remainingDays = ""
                 @State private var errorMessage = ""
-                @State private var isLoading = false; @State private var selectedGame = "com.dts.freefireth"
+                @State private var isLoading = false
+                @State private var selectedGame = "com.dts.freefireth"
                 @State private var modFeatures: [ModItem] = [
                     ModItem(title: "Aim Drag", subtitle: "FREE FIRE • INJECT", patchFileName: "ZAYNIX File (1)"),
                     ModItem(title: "Aim Hook", subtitle: "FREE FIRE • INJECT", patchFileName: "ZAYNIX File (2)"),
@@ -50,6 +58,7 @@ jobs:
                     ModItem(title: "144 FPS Unlock", subtitle: "FREE FIRE • INJECT", patchFileName: "ZAYNIX File (4)"),
                     ModItem(title: "💎 MOD MENU ZAYNIX", subtitle: "SPECIAL EDITION", patchFileName: "ZAYNIX File (14)")
                 ]
+
                 var body: some View {
                     ZStack {
                         Color(red: 0.05, green: 0.05, blue: 0.07).ignoresSafeArea()
@@ -103,7 +112,6 @@ jobs:
                 func checkLicenseFromVercel() {
                     isLoading = true
                     errorMessage = ""
-                    // Ganti link di bawah ini dengan URL Vercel asli milik Anda!
                     let urlString = "https://vercel.app\(inputLicense)"
                     guard let url = URL(string: urlString) else { isLoading = false; return }
                     
@@ -125,15 +133,17 @@ jobs:
                     }.resume()
                 }
             }
-            EOF
+          EOF
           fi
 
       - name: Konfigurasi Bundle ID Baru Aplikasi
         run: |
           PLIST_FILE=$(find . -name 'Info.plist' -print -quit)
           if [ -f "$PLIST_FILE" ]; then
-            plutil -replace CFBundleIdentifier -string "${{ github.event.inputs.bundle_id }}" "$PLIST_FILE"
-            plutil -replace CFBundleDisplayName -string "${{ github.event.inputs.project_name }}" "$PLIST_FILE"
+            if which plutil > /dev/null; then
+              plutil -replace CFBundleIdentifier -string "${{ github.event.inputs.bundle_id }}" "$PLIST_FILE"
+              plutil -replace CFBundleDisplayName -string "${{ github.event.inputs.project_name }}" "$PLIST_FILE"
+            fi
           fi
 
       - name: Eksekusi Xcode Build Engine
