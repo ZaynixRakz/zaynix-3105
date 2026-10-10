@@ -29,111 +29,13 @@ jobs:
           ZIP_FILE=$(find . -name '*.zip*' -print -quit)
           if [ -n "$ZIP_FILE" ]; then unzip -o "$ZIP_FILE"; fi
 
-      - name: Bangun Ulang Tampilan Aplikasi Zaynix Dari Nol via Xcode Engine
+      - name: Bangun Ulang Tampilan Aplikasi Zaynix Otomatis (Anti-Error)
         run: |
+          # Mencari file tampilan utama dan mengubah semua teks OGIOS menjadi ZAYNIX secara instan dan aman
           TARGET_FILE=$(find . -name 'ContentView.swift' -print -quit)
           if [ -f "$TARGET_FILE" ]; then
-            cat << 'EOF' > "$TARGET_FILE"
-            import SwiftUI
-
-            struct ModItem: Identifiable {
-                let id = UUID()
-                let title: String
-                let subtitle: String
-                let patchFileName: String
-                var isEnabled = false
-            }
-
-            struct ContentView: View {
-                @State private var inputLicense = ""
-                @State private var isLoginSuccess = false
-                @State private var remainingDays = ""
-                @State private var errorMessage = ""
-                @State private var isLoading = false
-                @State private var selectedGame = "com.dts.freefireth"
-                @State private var modFeatures: [ModItem] = [
-                    ModItem(title: "Aim Drag", subtitle: "FREE FIRE • INJECT", patchFileName: "ZAYNIX File (1)"),
-                    ModItem(title: "Aim Hook", subtitle: "FREE FIRE • INJECT", patchFileName: "ZAYNIX File (2)"),
-                    ModItem(title: "Antenna W10", subtitle: "FREE FIRE • INJECT", patchFileName: "ZAYNIX File (3)"),
-                    ModItem(title: "144 FPS Unlock", subtitle: "FREE FIRE • INJECT", patchFileName: "ZAYNIX File (4)"),
-                    ModItem(title: "💎 MOD MENU ZAYNIX", subtitle: "SPECIAL EDITION", patchFileName: "ZAYNIX File (14)")
-                ]
-
-                var body: some View {
-                    ZStack {
-                        Color(red: 0.05, green: 0.05, blue: 0.07).ignoresSafeArea()
-                        if !isLoginSuccess {
-                            VStack(spacing: 30) {
-                                VStack(spacing: 8) {
-                                    Text("ZAYNIX").font(.system(size: 48, weight: .black, design: .rounded)).foregroundColor(.white)
-                                    Text("VERCEL LICENSED CONTROL CENTER").font(.system(size: 10, weight: .bold)).foregroundColor(.red)
-                                }.padding(.top, 80)
-                                VStack(alignment: .leading, spacing: 15) {
-                                    Text("ENTER ACCESS KEY").font(.caption).bold().foregroundColor(.gray)
-                                    TextField("ZAYNIX-XXXXXXXXXX", text: $inputLicense).padding().background(Color.white.opacity(0.04)).cornerRadius(14).foregroundColor(.white).overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.red.opacity(0.3), lineWidth: 1))
-                                    if !errorMessage.isEmpty { Text(errorMessage).font(.caption).foregroundColor(.red).bold() }
-                                }.padding(.horizontal, 32)
-                                Button(action: { checkLicenseFromVercel() }) {
-                                    HStack {
-                                        if isLoading { ProgressView() }
-                                        else { Text("VERIFY VIA VERCEL").font(.headline).bold().foregroundColor(.white) }
-                                    }.frame(maxWidth: .infinity).frame(height: 56).background(Color.red).cornerRadius(14)
-                                }.padding(.horizontal, 32).disabled(isLoading)
-                                Spacer()
-                            }
-                        } else {
-                            ScrollView {
-                                VStack(spacing: 22) {
-                                    HStack {
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text("ZAYNIX").font(.system(size: 28, weight: .black)).foregroundColor(.white)
-                                            Text("MULTIPACK CONTROL CENTER").font(.caption).foregroundColor(.red).bold()
-                                        }
-                                        Spacer()
-                                        Text("\(remainingDays)").font(.system(size: 11, weight: .bold)).padding(.horizontal, 12).padding(.vertical, 8).background(Color.green.opacity(0.15)).foregroundColor(.green).cornerRadius(20)
-                                    }.padding(.horizontal).padding(.top, 15)
-                                    
-                                    VStack(spacing: 16) {
-                                        ForEach($modFeatures) { $feature in
-                                            Toggle(isOn: $feature.isEnabled) {
-                                                VStack(alignment: .leading, spacing: 4) {
-                                                    Text(feature.title).font(.headline).foregroundColor(.white)
-                                                    Text(feature.subtitle).font(.caption).foregroundColor(.gray)
-                                                }
-                                            }.padding().background(Color.white.opacity(0.03)).cornerRadius(12)
-                                        }
-                                    }.padding(.horizontal)
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                func checkLicenseFromVercel() {
-                    isLoading = true
-                    errorMessage = ""
-                    let urlString = "https://vercel.app\(inputLicense)"
-                    guard let url = URL(string: urlString) else { isLoading = false; return }
-                    
-                    URLSession.shared.dataTask(with: url) { data, _, _ in
-                        DispatchQueue.main.async {
-                            isLoading = false
-                            if let data = data, let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                                let status = json["status"] as? String ?? "FAILED"
-                                if status == "SUCCESS" {
-                                    self.remainingDays = json["expired"] as? String ?? "AKTIF"
-                                    self.isLoginSuccess = true
-                                } else {
-                                    self.errorMessage = json["message"] as? String ?? "Kunci salah atau kedaluwarsa!"
-                                }
-                            } else {
-                                self.errorMessage = "Gagal terhubung ke server Vercel!"
-                            }
-                        }
-                    }.resume()
-                }
-            }
-            EOF
+            sed -i '' 's/OGIOS/ZAYNIX/g' "$TARGET_FILE"
+            sed -i '' 's/OGIOS File/ZAYNIX File/g' "$TARGET_FILE"
           fi
 
       - name: Konfigurasi Bundle ID Baru Aplikasi
@@ -149,9 +51,7 @@ jobs:
       - name: Eksekusi Xcode Build Engine
         run: |
           XCODE_PROJ=$(find . -name '*.xcodeproj' -print -quit)
-          XCODE_PROJECT_DIR=$(dirname "$XCODE_PROJ")
           
-          # Memperbaiki folder output tujuan agar Xcode mengenali struktur internal skrip dengan sinkron
           xcodebuild -project "$XCODE_PROJ" \
                      -scheme "${{ github.event.inputs.scheme }}" \
                      -configuration Release \
@@ -165,7 +65,6 @@ jobs:
       - name: Persiapan Ekspor File Aplikasi
         run: |
           mkdir -p Payload
-          # Cari letak file .app secara dinamis di dalam folder build kompilasi
           APP_PATH=$(find build/ZAYNIX.xcarchive/Products/Applications -name '*.app' -print -quit)
           if [ -d "$APP_PATH" ]; then
             cp -R "$APP_PATH" Payload/
@@ -183,4 +82,4 @@ jobs:
         with:
           name: ZAYNIX-Menu-Applications
           path: ZAYNIX_Unsigned.ipa
-          
+
