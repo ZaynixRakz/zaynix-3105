@@ -31,11 +31,12 @@ jobs:
 
       - name: Bangun Ulang Tampilan Aplikasi Zaynix Otomatis (Anti-Error)
         run: |
-          # Mencari file tampilan utama dan mengubah semua teks OGIOS menjadi ZAYNIX secara instan dan aman
           TARGET_FILE=$(find . -name 'ContentView.swift' -print -quit)
           if [ -f "$TARGET_FILE" ]; then
-            sed -i '' 's/OGIOS/ZAYNIX/g' "$TARGET_FILE"
-            sed -i '' 's/OGIOS File/ZAYNIX File/g' "$TARGET_FILE"
+            # Mengubah teks OGIOS ke ZAYNIX di tampilan menu visual
+            sed -i '' 's/"OGIOS"/"ZAYNIX"/g' "$TARGET_FILE"
+            sed -i '' 's/"PATCH CONTROL CENTER"/"ZAYNIX CONTROL CENTER"/g' "$TARGET_FILE"
+            sed -i '' 's/"Developed by OGIOS"/"Developed by ZAYNIX"/g' "$TARGET_FILE"
           fi
 
       - name: Konfigurasi Bundle ID Baru Aplikasi
@@ -52,15 +53,14 @@ jobs:
         run: |
           XCODE_PROJ=$(find . -name '*.xcodeproj' -print -quit)
           
+          # Melakukan kompilasi murni menggunakan skrip bawaan asli project tanpa memaksa memodifikasi nama biner internal agar tidak error 65
           xcodebuild -project "$XCODE_PROJ" \
                      -scheme "${{ github.event.inputs.scheme }}" \
                      -configuration Release \
                      -archivePath build/ZAYNIX.xcarchive \
                      clean archive \
                      CODE_SIGNING_ALLOWED=NO \
-                     CODE_SIGNING_REQUIRED=NO \
-                     PRODUCT_NAME="OGIOS" \
-                     WRAPPER_NAME="OGIOS.app"
+                     CODE_SIGNING_REQUIRED=NO
 
       - name: Persiapan Ekspor File Aplikasi
         run: |
@@ -82,4 +82,4 @@ jobs:
         with:
           name: ZAYNIX-Menu-Applications
           path: ZAYNIX_Unsigned.ipa
-
+          
