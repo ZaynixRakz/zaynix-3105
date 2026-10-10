@@ -40,14 +40,15 @@ jobs:
             }
             struct ContentView: View {
                 @State private var inputLicense = ""; @State private var isLoginSuccess = false
-                @State private var remainingDays = 0; @State private var errorMessage = ""
+                @State private var remainingDays = ""
+                @State private var errorMessage = ""
                 @State private var isLoading = false; @State private var selectedGame = "com.dts.freefireth"
                 @State private var modFeatures: [ModItem] = [
-                    ModItem(title: "Aim Drag", subtitle: "FREE FIRE • INJECT", patchFileName: "OGIOS File (1)"),
-                    ModItem(title: "Aim Hook", subtitle: "FREE FIRE • INJECT", patchFileName: "OGIOS File (2)"),
-                    ModItem(title: "Antenna W10", subtitle: "FREE FIRE • INJECT", patchFileName: "OGIOS File (3)"),
-                    ModItem(title: "144 FPS Unlock", subtitle: "FREE FIRE • INJECT", patchFileName: "OGIOS File (4)"),
-                    ModItem(title: "💎 MOD MENU ZAYNIX", subtitle: "SPECIAL EDITION", patchFileName: "OGIOS File (14)")
+                    ModItem(title: "Aim Drag", subtitle: "FREE FIRE • INJECT", patchFileName: "ZAYNIX File (1)"),
+                    ModItem(title: "Aim Hook", subtitle: "FREE FIRE • INJECT", patchFileName: "ZAYNIX File (2)"),
+                    ModItem(title: "Antenna W10", subtitle: "FREE FIRE • INJECT", patchFileName: "ZAYNIX File (3)"),
+                    ModItem(title: "144 FPS Unlock", subtitle: "FREE FIRE • INJECT", patchFileName: "ZAYNIX File (4)"),
+                    ModItem(title: "💎 MOD MENU ZAYNIX", subtitle: "SPECIAL EDITION", patchFileName: "ZAYNIX File (14)")
                 ]
                 var body: some View {
                     ZStack {
@@ -80,42 +81,46 @@ jobs:
                                             Text("MULTIPACK CONTROL CENTER").font(.caption).foregroundColor(.red).bold()
                                         }
                                         Spacer()
-                                        Text("\(remainingDays) HARI AKTIF").font(.system(size: 11, weight: .bold)).padding(.horizontal, 12).padding(.vertical, 8).background(Color.green.opacity(0.15)).foregroundColor(.green).cornerRadius(20)
+                                        Text("\(remainingDays)").font(.system(size: 11, weight: .bold)).padding(.horizontal, 12).padding(.vertical, 8).background(Color.green.opacity(0.15)).foregroundColor(.green).cornerRadius(20)
                                     }.padding(.horizontal).padding(.top, 15)
-                                    VStack(alignment: .leading, spacing: 12) {
-                                        Text("SELECT GAME VERSION").font(.system(size: 10, weight: .bold)).foregroundColor(.gray)
-                                        Picker("Game", selection: $selectedGame) {
-                                            Text("Free Fire Normal").tag("com.dts.freefireth")
-                                            Text("Free Fire MAX").tag("com.dts.freefiremax")
-                                        }.pickerStyle(.segmented)
-                                    }.padding().background(Color.white.opacity(0.03)).cornerRadius(14).padding(.horizontal)
-                                    VStack(alignment: .leading, spacing: 12) {
-                                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 15) {
-                                            ForEach(0..<modFeatures.count, id: \.self) { idx in
-                                                VStack(alignment: .leading, spacing: 10) {
-                                                    Toggle(modFeatures[idx].title, isOn: $modFeatures[idx].isEnabled).foregroundColor(.white).font(.system(size: 14, weight: .bold))
-                                                }.padding().background(Color.white.opacity(0.03)).cornerRadius(16)
-                                            }
-                                        }.padding(.horizontal)
-                                    }
-                                    Link("ZAYNIX TELEGRAM", destination: URL(string: "https://t.me")!).font(.system(size: 11, weight: .bold)).foregroundColor(.blue).padding()
+                                    
+                                    VStack(spacing: 16) {
+                                        ForEach($modFeatures) { $feature in
+                                            Toggle(isOn: $feature.isEnabled) {
+                                                VStack(alignment: .leading, spacing: 4) {
+                                                    Text(feature.title).font(.headline).foregroundColor(.white)
+                                                    Text(feature.subtitle).font(.caption).foregroundColor(.gray)
+                                                }
+                                            }.padding().background(Color.white.opacity(0.03)).cornerRadius(12)
+                                        }
+                                    }.padding(.horizontal)
                                 }
                             }
                         }
                     }
                 }
+                
                 func checkLicenseFromVercel() {
-                    guard !inputLicense.isEmpty else { errorMessage = "⚠️ KEY KOSONG!"; return }
-                    isLoading = true; errorMessage = ""
-                    let urlStr = "https://vercel.app\(inputLicense)"
-                    guard let url = URL(string: urlStr) else { isLoading = false; return }
-                    URLSession.shared.dataTask(with: url) { d, _, _ in
+                    isLoading = true
+                    errorMessage = ""
+                    // Ganti link di bawah ini dengan URL Vercel asli milik Anda!
+                    let urlString = "https://vercel.app\(inputLicense)"
+                    guard let url = URL(string: urlString) else { isLoading = false; return }
+                    
+                    URLSession.shared.dataTask(with: url) { data, _, _ in
                         DispatchQueue.main.async {
-                            self.isLoading = false
-                            if let d = d, let json = try? JSONSerialization.jsonObject(with: d) as? [String: Any],
-                               let valid = json["valid"] as? Bool, valid == true, let days = json["days"] as? Int {
-                                self.remainingDays = days; self.isLoginSuccess = true
-                            } else { self.errorMessage = "❌ KEY INVALID/EXPIRED!" }
+                            isLoading = false
+                            if let data = data, let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                                let status = json["status"] as? String ?? "FAILED"
+                                if status == "SUCCESS" {
+                                    self.remainingDays = json["expired"] as? String ?? "AKTIF"
+                                    self.isLoginSuccess = true
+                                } else {
+                                    self.errorMessage = json["message"] as? String ?? "Kunci salah atau kedaluwarsa!"
+                                }
+                            } else {
+                                self.errorMessage = "Gagal terhubung ke server Vercel!"
+                            }
                         }
                     }.resume()
                 }
@@ -123,32 +128,36 @@ jobs:
             EOF
           fi
 
-      - name: Konfigurasi Identitas Utama dan Bersihkan Cache Sampah Proyek
+      - name: Konfigurasi Bundle ID Baru Aplikasi
         run: |
           PLIST_FILE=$(find . -name 'Info.plist' -print -quit)
-          if [ -f "$PLIST_FILE" ]; then sed -i '' 's/OGIOS/ZAYNIX/g' "$PLIST_FILE"; fi
-          find . -name 'CleanerView.swift' -delete || true
-          find . -name 'SettingsView.swift' -delete || true
+          if [ -f "$PLIST_FILE" ]; then
+            plutil -replace CFBundleIdentifier -string "${{ github.event.inputs.bundle_id }}" "$PLIST_FILE"
+            plutil -replace CFBundleDisplayName -string "${{ github.event.inputs.project_name }}" "$PLIST_FILE"
+          fi
 
-      - name: Proses Pencarian Lokasi Berkas Cetak BluePrint Xcode Proyek
-        id: locate
+      - name: Eksekusi Xcode Build Engine
         run: |
-          PROJECT=$(find . -name '*.xcodeproj' -type d -print -quit)
-          echo "project=$PROJECT" >> "$GITHUB_OUTPUT"
+          XCODE_PROJ=$(find . -name '*.xcodeproj' -print -quit)
+          xcodebuild -project "$XCODE_PROJ" \
+                     -scheme "${{ github.event.inputs.scheme }}" \
+                     -configuration Release \
+                     -archivePath build/ZAYNIX.xcarchive \
+                     clean archive \
+                     CODE_SIGNING_ALLOWED=NO \
+                     CODE_SIGNING_REQUIRED=NO
 
-      - name: Eksekusi Kompilasi Awan Tanpa Lisensi Xcodebuild Archive
+      - name: Persiapan Ekspor File Aplikasi
         run: |
-          xcodebuild archive -project "${{ steps.locate.outputs.project }}" -scheme OGIOS -sdk iphoneos -configuration Release -archivePath "$RUNNER_TEMP/App.xcarchive" CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY='' PRODUCT_BUNDLE_IDENTIFIER="${{ inputs.bundle_id }}"
+          mkdir -p Payload
+          mv build/ZAYNIX.xcarchive/Products/Applications/*.app Payload/
 
-      - name: Bungkus Seluruh Hasil Produk Menjadi Berkas Mentah Format IPA
+      - name: Konversi Menjadi File Mentahan .IPA
         run: |
-          APP_PATH=$(find "$RUNNER_TEMP/App.xcarchive/Products/Applications" -maxdepth 1 -name '*.app' -type d -print -quit)
-          mkdir -p "$RUNNER_TEMP/Payload"
-          cp -R "$APP_PATH" "$RUNNER_TEMP/Payload/"
-          ditto -c -k --sequesterRsrc --keepParent "$RUNNER_TEMP/Payload" "$RUNNER_TEMP/${{ inputs.project_name }}.ipa"
+          zip -qq -r -9 ZAYNIX_Unsigned.ipa Payload
 
-      - name: Unggah Hasil Kemasan Kompilasi Matang ke Server Unduhan Artifacts
+      - name: Amankan Hasil File Aplikasi Untuk Diunduh
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.project_name }}-unsigned-ipa
-          path: ${{ runner.temp }}/${{ inputs.project_name }}.ipa
+          name: ZAYNIX-Menu-Applications
+          path: ZAYNIX_Unsigned.ipa
